@@ -19,3 +19,8 @@ teste
 
 # Arquivos de log ou temporários
 *.log
+
+#anotações
+*.txt
+
+
