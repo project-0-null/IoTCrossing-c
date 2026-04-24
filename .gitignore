@@ -1,0 +1,21 @@
+# Compilação e Build
+build/
+bin/
+obj/
+*.o
+*.a
+*.so
+
+# Executáveis gerados
+main
+teste
+
+# Arquivos de Sistema e IDEs
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.patch
+
+# Arquivos de log ou temporários
+*.log
