@@ -2,6 +2,10 @@
 #include <iostream>
 #include <chrono> 
 #include "yolo-fastestv2.h"
+//futuramente podemos fazer uma quantização em INT8, mas por enquanto vamos usar o modelo em FP16 mesmo, que é mais fácil de lidar e ainda tem um desempenho decente na CPU.
+//atualmente estamos usando o .param e .bin padrâo (que calcula com casas decimais - FP32 ou FP16). o NCNN permite convertes esse motelo apra INT8, (numeros inteiros). a precisão cai cair para a velocidae pode aumentar ( tradeoff entre precisão e velocidade). 
+//para usar o modelo quantizado, basta substituir os arquivos .param e .bin pelos arquivos quantizados (geralmente com sufixo _int8.param e _int8.bin) e garantir que o código de carregamento do modelo esteja apontando para esses arquivos. 
+//a detecção em si não precisa ser alterada, pois o NCNN lida com a diferença de precisão internamente.
 
 using namespace std;// Evita ter que escrever "std::" antes de cada comando do C++
 using namespace cv;// Evita ter que escrever "cv::" antes de cada comando do OpenCV
@@ -20,6 +24,9 @@ int main() {
     yolo_init(yolo);
 
     VideoCapture cap(0); 
+    cap.set(CAP_PROP_FRAME_WIDTH, 320);
+    cap.set(CAP_PROP_FRAME_HEIGHT, 240);
+
     //nao vi ncessidade de um try catch aqui, se a camera nao abrir, o programa ja vai avisar e fechar, entao nao tem risco de dar erro
     if (!cap.isOpened()) {
         cerr << "Erro: Nenhuma câmera encontrada no índice 0!" << endl;
