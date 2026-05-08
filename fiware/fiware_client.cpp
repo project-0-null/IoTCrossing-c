@@ -9,11 +9,12 @@
 
 using json = nlohmann::json;
 
-static const std::string CTX_FIWARE = "https://uri.fiware.org/ns/data-models#context.jsonld";
-static const std::string CTX_ETSI   = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
+static const std::string CTX_ETSI = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld";
+static const std::string URI_NAME = "https://uri.etsi.org/ngsi-ld/name";
+static const std::string URI_PPC  = "https://uri.fiware.org/ns/data-models#peopleCount";
 
 // ── Callback interno do libcurl ──────────────────────────────────────────────
-static size_t curl_discard(void*, size_t size, size_t nmemb, void*) {
+static size_t curl_discard(char*, size_t size, size_t nmemb, void*) {
     return size * nmemb;
 }
 
@@ -23,15 +24,17 @@ FiwareClient::FiwareClient(const FiwareConfig& cfg) : cfg_(cfg) {
 }
 
 FiwareClient::~FiwareClient() {
-    curl_global_cleanup();
+    curl_global_cleanup();//limpa recursos alocados pelo libcurl
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 std::string FiwareClient::iso8601_now() const {
     auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     std::time_t t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << std::put_time(std::gmtime(&t), "%Y-%m-%dT%H:%M:%SZ");
+    ss << std::put_time(std::gmtime(&t), "%Y-%m-%dT%H:%M:%S");
+    ss << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
     return ss.str();
 }
 
@@ -70,14 +73,17 @@ long FiwareClient::http_request(const std::string& method,
 // ── POST: cria entidade ──────────────────────────────────────────────────────
 bool FiwareClient::init_entity() {
     json payload;
-    payload["id"]       = cfg_.entity_id;
-    payload["type"]     = "CrowdFlowObserved";
-    payload["@context"] = {CTX_FIWARE, CTX_ETSI};
-    payload["peopleCount"]  = {{"type", "Property"}, {"value", 0}};
-    payload["dateObserved"] = {{"type", "Property"}, {"value", iso8601_now()}};
-    payload["location"]     = {
+    payload["@context"] = CTX_ETSI;//context obrigatório para Orion-LD
+    payload["id"]       = cfg_.entity_id;//id da entidade
+    payload["type"]     = "ItemFlowObserved";//tipo da entidade
+    
+    payload["timestamp"] = {{"type", "Property"}, {"value", iso8601_now()}};
+    payload[URI_NAME]    = {{"type", "Property"}, {"value", cfg_.entity_name}};
+    payload[URI_PPC]     = {{"type", "Property"}, {"value", 0}};
+    
+    payload["location"]  = {
         {"type",  "GeoProperty"},
-        {"value", {{"type", "Point"}, {"coordinates", {cfg_.latitude, cfg_.longitude}}}}
+        {"value", {{"type", "Point"}, {"coordinates", {cfg_.longitude, cfg_.latitude}}}}
     };
 
     std::string url  = cfg_.broker_url + "/ngsi-ld/v1/entities";
@@ -90,16 +96,16 @@ bool FiwareClient::init_entity() {
         std::cout << "[FIWARE] Entidade já existe (409). Continuando." << std::endl;
         return true;
     }
-    std::cerr << "[FIWARE] Falha no POST. HTTP " << code << std::endl;
+    std::cerr << "[FIWARE] Falha no POST em " << url << ". HTTP " << code << std::endl;
     return false;
 }
 
 // ── PATCH: atualiza atributos ────────────────────────────────────────────────
 void FiwareClient::update(int people_count) {
     json attrs;
-    attrs["@context"]       = {CTX_FIWARE, CTX_ETSI};
-    attrs["peopleCount"]    = {{"type", "Property"}, {"value", people_count}};
-    attrs["dateObserved"]   = {{"type", "Property"}, {"value", iso8601_now()}};
+    attrs["@context"]  = CTX_ETSI;
+    attrs["timestamp"] = {{"type", "Property"}, {"value", iso8601_now()}};
+    attrs[URI_PPC]     = {{"type", "Property"}, {"value", people_count}};
 
     std::string url = cfg_.broker_url + "/ngsi-ld/v1/entities/" + cfg_.entity_id + "/attrs";
     long code = http_request("PATCH", url, attrs.dump());

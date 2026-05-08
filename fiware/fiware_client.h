@@ -2,11 +2,12 @@
 #include <string>
 
 struct FiwareConfig {
-    std::string broker_url  = "http://127.0.0.1:31330/ngsi-ld/v1/entities/";//achar o ip do broker
-    std::string entity_id   = "urn:ngsi-ld:CrowdFlowObserved:RaspberryPi_01";
-    double      latitude    = -23.5505;
-    double      longitude   = -46.6333;
-    int         interval_s  = 60;
+    std::string broker_url  = "http://127.0.0.1:1026"; // Orion-LD port 1026
+    std::string entity_id   = "urn:ngsi-ld:ItemFlowObserved:1";
+    std::string entity_name = "RaspberryPi_3";//nome
+    double      latitude    = -20.272594;//mudar
+    double      longitude   = -40.306346;//mudar
+    int         interval_s  = 60;//verificar mediante a teste
 };
 
 class FiwareClient {
