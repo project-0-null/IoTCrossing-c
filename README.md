@@ -1,8 +1,8 @@
 # IoT People Detection for SmartCrossing Digital Twins
 
-This project is part of a Scientific Initiation (IC) research conducted at the **NERDS Lab (Network Engineering and Robust Distributed Systems)**. 
+This project is part of a Scientific Initiation (IC) research conducted at the **NERDS Lab (Nucleo de Estudos em Redes Definidas por Software)**. 
 
-The primary objective is to implement a robust and high-performance people detection system designed specifically for **SmartCrossing** scenarios within the context of **Digital Twins**. By monitoring pedestrian flow at crossings, the system provides real-time data to synchronize physical infrastructure with its digital counterpart, enabling advanced urban simulation and safety management.
+The primary objective is to implement a robust and high-performance people detection system designed specifically for **SmartCrossing** scenarios within the context of **Digital Twins**. By monitoring pedestrian flow at crossings, the system provides real-time data to synchronize physical infrastructure with its digital counterpart, enabling advanced urban simulation for smart cities and safety management.
 
 ### Edge Performance with C++
 To ensure maximum efficiency at the **Edge Node**, this entire solution is implemented in **C++**. This architectural choice is critical for:
