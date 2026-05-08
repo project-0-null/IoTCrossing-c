@@ -1,80 +1,96 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <chrono> 
+#include <chrono>
+#include <vector>
+#include <csignal>
 #include "yolo-fastestv2.h"
-//futuramente podemos fazer uma quantização em INT8, mas por enquanto vamos usar o modelo em FP16 mesmo, que é mais fácil de lidar e ainda tem um desempenho decente na CPU.
-//atualmente estamos usando o .param e .bin padrâo (que calcula com casas decimais - FP32 ou FP16). o NCNN permite convertes esse motelo apra INT8, (numeros inteiros). a precisão cai cair para a velocidae pode aumentar ( tradeoff entre precisão e velocidade). 
-//para usar o modelo quantizado, basta substituir os arquivos .param e .bin pelos arquivos quantizados (geralmente com sufixo _int8.param e _int8.bin) e garantir que o código de carregamento do modelo esteja apontando para esses arquivos. 
-//a detecção em si não precisa ser alterada, pois o NCNN lida com a diferença de precisão internamente.
+#include "metrics/metrics.h"
+#include "fiware/fiware_client.h"
 
-using namespace std;// Evita ter que escrever "std::" antes de cada comando do C++
-using namespace cv;// Evita ter que escrever "cv::" antes de cada comando do OpenCV
+using namespace std;
+using namespace cv;
 
-void yolo_init(yoloFastestv2 &yolo){
-    // (Certifique-se de que esses arquivos estão na mesma pasta do seu executável)
-    yolo.loadModel("yolo-fastestv2-opt.param", "yolo-fastestv2-opt.bin");
-    cout<<"modelo carregado com sucesso!"<<endl;
+bool run_loop = true;
+void signalHandler(int) {
+    cout << "\nFinalizando e salvando dados..." << endl;
+    run_loop = false;
 }
 
-
+void yolo_init(yoloFastestv2& yolo) {
+    yolo.loadModel("yolo-fastestv2-opt.param", "yolo-fastestv2-opt.bin");
+    cout << "[YOLO] Modelo carregado." << endl;
+}
 
 int main() {
-    cout << "Sucesso! O programa C++ compilou e está vivo!" << endl;
+    signal(SIGINT, signalHandler);
+
+    // ── Configuração do broker ────────────────────────────────────────────
+    FiwareConfig cfg;
+    cfg.broker_url  = "http://seu-orion-broker:1026";
+    cfg.entity_id   = "urn:ngsi-ld:CrowdFlowObserved:RaspberryPi_01";
+    cfg.latitude    = -23.5505;
+    cfg.longitude   = -46.6333;
+    cfg.interval_s  = 60;
+
+    FiwareClient fiware(cfg);
+    fiware.init_entity(); // POST inicial
+
+    // ── YOLO + câmera ─────────────────────────────────────────────────────
     yoloFastestv2 yolo;
     yolo_init(yolo);
 
-    VideoCapture cap(0); 
-    cap.set(CAP_PROP_FRAME_WIDTH, 320);
+    VideoCapture cap(0, CAP_V4L2);
+    cap.set(CAP_PROP_FRAME_WIDTH,  320);
     cap.set(CAP_PROP_FRAME_HEIGHT, 240);
 
-    //nao vi ncessidade de um try catch aqui, se a camera nao abrir, o programa ja vai avisar e fechar, entao nao tem risco de dar erro
     if (!cap.isOpened()) {
-        cerr << "Erro: Nenhuma câmera encontrada no índice 0!" << endl;
+        cerr << "[CAM] Câmera não encontrada." << endl;
         return -1;
     }
 
-    cout << "Câmera ligada. Pressione 'Ctrl + C' para parar." << endl;
+    // ── Loop principal ────────────────────────────────────────────────────
+    vector<DetectionMetrics> history;
+    int  contador  = 0;
+    auto ultimo_envio = chrono::steady_clock::now();
 
-    Mat frame;
-    int contador_frames = 0;
-    
-    // Inicia o cronômetro do C++
-    auto tempo_inicio = chrono::steady_clock::now();
+    while (run_loop) {
+        auto frame_inicio = chrono::steady_clock::now();
 
-    while (true) {
-        cap >> frame; 
-        
-        if (frame.empty()) break; 
+        Mat frame;
+        cap >> frame;
+        if (frame.empty()) break;
 
-        std::vector<TargetBox> caixas_encontradas;//cria caixas vazias para receber os resultados do yolo
-        yolo.detection(frame, caixas_encontradas);//manda o opencv dar o frma pro yolo analisar
+        vector<TargetBox> caixas;
+        auto inf_inicio = chrono::steady_clock::now();
+        yolo.detection(frame, caixas);
+        auto inf_fim = chrono::steady_clock::now();
 
-        int pessoas_detectadas = 0;
-        for( auto caixa : caixas_encontradas){
-            if(caixa.cate == 0 && caixa.score>0.4){pessoas_detectadas++;}//se pessoa e conficança maior que 40%
-        }
+        double inf_ms = chrono::duration_cast<chrono::microseconds>(inf_fim - inf_inicio).count() / 1000.0;
 
-        contador_frames++;
-        
-        // A cada 30 frames, calculamos o tempo que passou
-        if (contador_frames % 30 == 0) {
-            auto tempo_agora = chrono::steady_clock::now();
-            
-            // Descobre quantos milissegundos se passaram desde a última medição
-            double tempo_passado_ms = chrono::duration_cast<chrono::milliseconds>(tempo_agora - tempo_inicio).count();
-            
-            // Regra de três para calcular o FPS
-            double fps_real = (30.0 / tempo_passado_ms) * 1000.0;
+        int pessoas = 0;
+        for (const auto& c : caixas)
+            if (c.cate == 0 && c.score > 0.4f) pessoas++;
 
-            cout << "Lidos 30 frames. Velocidade da câmera: " << fps_real << " FPS (Na CPU)" << endl;
-            cout << "Pessoas detectadas: " << pessoas_detectadas << endl;
-            
-            // Reseta o cronômetro para os próximos 30 frames
-            tempo_inicio = chrono::steady_clock::now(); 
+        double frame_ms = chrono::duration_cast<chrono::microseconds>(
+            chrono::steady_clock::now() - frame_inicio).count() / 1000.0;
+
+        history.push_back({inf_ms, 1000.0 / frame_ms, pessoas});
+        contador++;
+
+        if (contador % 30 == 0)
+            cout << "[Frame " << contador << "] " << inf_ms << "ms | "
+                 << 1000.0 / frame_ms << " fps | Pessoas: " << pessoas << endl;
+
+        // ── Envio periódico ───────────────────────────────────────────────
+        auto agora    = chrono::steady_clock::now();
+        auto segundos = chrono::duration_cast<chrono::seconds>(agora - ultimo_envio).count();
+        if (segundos >= cfg.interval_s) {
+            fiware.update(pessoas);
+            ultimo_envio = agora;
         }
     }
 
     cap.release();
-    return 0; 
+    save_metrics(history);
+    return 0;
 }
-

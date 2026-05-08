@@ -1,37 +1,31 @@
-cmake_minimum_required(VERSION 3.10)
-project(teste)
+cmake_minimum_required(VERSION 3.16)
+project(main)
 
-# Configurações de C++
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-#----------------------------------------
-# Buscando as ferramentas externas
-#----------------------------------------
-
-# 1. OpenCV
 find_package(OpenCV REQUIRED)
-
-# 2. ncnn (Busca inteligente)
-find_package(ncnn REQUIRED)
-
-# 3. OpenMP (Para processamento paralelo)
+find_package(CURL    REQUIRED)
 find_package(OpenMP REQUIRED)
 
-# Inclui os diretórios de cabeçalho
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(
+    ${OpenCV_INCLUDE_DIRS}
+    ${CURL_INCLUDE_DIRS}
+    include   # json.hpp
+    /usr/local/include/ncnn
 
-#----------------------------------------
-# Construindo o programa
-#----------------------------------------
+)
 
-# Define o executável e seus fontes
-add_executable(main main.cpp yolo-fastestv2.cpp)
+add_executable(main
+    main.cpp
+    fiware/fiware_client.cpp
+    metrics/metrics.cpp
+    yolo-fastestv2.cpp
+)
 
-# Linkagem inteligente (Sem caminhos absolutos)
-target_link_libraries(main 
-    ${OpenCV_LIBS} 
-    ncnn 
+target_link_libraries(main
+    ${OpenCV_LIBS}
+    ${CURL_LIBRARIES}
+    ncnn
     OpenMP::OpenMP_CXX
 )
