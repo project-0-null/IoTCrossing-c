@@ -26,15 +26,13 @@ int main() {
 
     // ── Configuração do broker ────────────────────────────────────────────
     FiwareConfig cfg;
-    cfg.broker_url  = "http://127.0.0.1:1026";//modificar para o Orion-LD
+    cfg.broker_url  = "http://127.0.0.1:31330";// Porta correta NodePort
     cfg.entity_id   = "urn:ngsi-ld:ItemFlowObserved:1";
     cfg.entity_name = "RaspberryPi_3";
-    //cfg.entity_name = "RaspberryPi_4";
-    //cfg.entity_name = "JetsonNano";
-    //cfg.entity_name = "Esp32-Cam";
     cfg.latitude    = -20.272594;
     cfg.longitude   = -40.306346;
-    cfg.interval_s  = 60;
+    cfg.interval_s  = 10; // 10 segundos para teste
+
 
     FiwareClient fiware(cfg);
     fiware.init_entity(); // POST inicial

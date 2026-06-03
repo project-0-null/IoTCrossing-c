@@ -24,7 +24,7 @@ FiwareClient::FiwareClient(const FiwareConfig& cfg) : cfg_(cfg) {
 }
 
 FiwareClient::~FiwareClient() {
-    curl_global_cleanup();//limpa recursos alocados pelo libcurl
+    curl_global_cleanup();
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,9 +73,9 @@ long FiwareClient::http_request(const std::string& method,
 // ── POST: cria entidade ──────────────────────────────────────────────────────
 bool FiwareClient::init_entity() {
     json payload;
-    payload["@context"] = CTX_ETSI;//context obrigatório para Orion-LD
-    payload["id"]       = cfg_.entity_id;//id da entidade
-    payload["type"]     = "ItemFlowObserved";//tipo da entidade
+    payload["@context"] = CTX_ETSI;
+    payload["id"]       = cfg_.entity_id;
+    payload["type"]     = "ItemFlowObserved";
     
     payload["timestamp"] = {{"type", "Property"}, {"value", iso8601_now()}};
     payload[URI_NAME]    = {{"type", "Property"}, {"value", cfg_.entity_name}};
@@ -87,6 +87,8 @@ bool FiwareClient::init_entity() {
     };
 
     std::string url  = cfg_.broker_url + "/ngsi-ld/v1/entities";
+    std::cout << "[FIWARE] Tentando POST em: " << url << std::endl;
+
     long code = http_request("POST", url, payload.dump());
 
     if (code == 201) {
@@ -108,10 +110,14 @@ void FiwareClient::update(int people_count) {
     attrs[URI_PPC]     = {{"type", "Property"}, {"value", people_count}};
 
     std::string url = cfg_.broker_url + "/ngsi-ld/v1/entities/" + cfg_.entity_id + "/attrs";
+    
+    std::cout << "[FIWARE] Enviando PATCH para: " << url << std::endl;
+    std::cout << "[FIWARE] Dados (JSON): " << attrs.dump() << std::endl;
+
     long code = http_request("PATCH", url, attrs.dump());
 
     if (code == 204)
         std::cout << "[FIWARE] PATCH OK. Pessoas: " << people_count << std::endl;
     else
-        std::cerr << "[FIWARE] PATCH falhou. HTTP " << code << std::endl;
+        std::cerr << "[FIWARE] PATCH falhou. HTTP " << code << " | URL: " << url << std::endl;
 }
