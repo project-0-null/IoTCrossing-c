@@ -52,7 +52,7 @@ int main() {
         return -1;
     }
 
-    cap.set(CAP_PROP_FRAME_WIDTH,  320);
+    cap.set(CAP_PROP_FRAME_WIDTH,  320);//alterar via necessidade, atualmente usando (640x480)
     cap.set(CAP_PROP_FRAME_HEIGHT, 240);
 
     // Espera a câmera estabilizar (warm-up)
