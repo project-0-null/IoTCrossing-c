@@ -1,0 +1,405 @@
+{
+    "frames": [
+        {
+            "fps": 4.484083744748017,
+            "inference_time_ms": 14.844,
+            "people_count": 1
+        },
+        {
+            "fps": 54.3685097591475,
+            "inference_time_ms": 9.572,
+            "people_count": 1
+        },
+        {
+            "fps": 33.579583613163194,
+            "inference_time_ms": 7.41,
+            "people_count": 1
+        },
+        {
+            "fps": 30.97221792052529,
+            "inference_time_ms": 7.537,
+            "people_count": 1
+        },
+        {
+            "fps": 25.774524460023713,
+            "inference_time_ms": 10.5,
+            "people_count": 1
+        },
+        {
+            "fps": 33.51431061063074,
+            "inference_time_ms": 8.425,
+            "people_count": 1
+        },
+        {
+            "fps": 29.915041282756974,
+            "inference_time_ms": 9.734,
+            "people_count": 1
+        },
+        {
+            "fps": 28.199994360001128,
+            "inference_time_ms": 9.375,
+            "people_count": 1
+        },
+        {
+            "fps": 31.471282454760033,
+            "inference_time_ms": 9.134,
+            "people_count": 1
+        },
+        {
+            "fps": 31.346979718504123,
+            "inference_time_ms": 8.972,
+            "people_count": 1
+        },
+        {
+            "fps": 29.53162837398854,
+            "inference_time_ms": 6.899,
+            "people_count": 1
+        },
+        {
+            "fps": 28.831737977165265,
+            "inference_time_ms": 9.411,
+            "people_count": 1
+        },
+        {
+            "fps": 32.97283038776049,
+            "inference_time_ms": 7.771,
+            "people_count": 1
+        },
+        {
+            "fps": 27.897115438263686,
+            "inference_time_ms": 7.53,
+            "people_count": 1
+        },
+        {
+            "fps": 28.52822868228112,
+            "inference_time_ms": 10.702,
+            "people_count": 1
+        },
+        {
+            "fps": 32.18124477054772,
+            "inference_time_ms": 9.818,
+            "people_count": 1
+        },
+        {
+            "fps": 30.269092229924027,
+            "inference_time_ms": 10.897,
+            "people_count": 1
+        },
+        {
+            "fps": 27.550486266082597,
+            "inference_time_ms": 10.963,
+            "people_count": 1
+        },
+        {
+            "fps": 33.10819758972321,
+            "inference_time_ms": 9.205,
+            "people_count": 1
+        },
+        {
+            "fps": 30.446034404018878,
+            "inference_time_ms": 10.29,
+            "people_count": 1
+        },
+        {
+            "fps": 29.612958630696795,
+            "inference_time_ms": 8.035,
+            "people_count": 1
+        },
+        {
+            "fps": 29.235491887151003,
+            "inference_time_ms": 10.117,
+            "people_count": 1
+        },
+        {
+            "fps": 32.94133148861877,
+            "inference_time_ms": 8.367,
+            "people_count": 1
+        },
+        {
+            "fps": 26.5097290705689,
+            "inference_time_ms": 10.367,
+            "people_count": 1
+        },
+        {
+            "fps": 30.711587481956943,
+            "inference_time_ms": 10.824,
+            "people_count": 1
+        },
+        {
+            "fps": 31.63055511624229,
+            "inference_time_ms": 10.461,
+            "people_count": 1
+        },
+        {
+            "fps": 27.565675221214544,
+            "inference_time_ms": 10.471,
+            "people_count": 1
+        },
+        {
+            "fps": 31.32537668765467,
+            "inference_time_ms": 10.392,
+            "people_count": 1
+        },
+        {
+            "fps": 31.415915302692344,
+            "inference_time_ms": 10.42,
+            "people_count": 1
+        },
+        {
+            "fps": 27.653337757867376,
+            "inference_time_ms": 10.487,
+            "people_count": 1
+        },
+        {
+            "fps": 31.295965949989046,
+            "inference_time_ms": 10.482,
+            "people_count": 1
+        },
+        {
+            "fps": 31.334210691232688,
+            "inference_time_ms": 10.452,
+            "people_count": 1
+        },
+        {
+            "fps": 29.229510113410495,
+            "inference_time_ms": 12.645,
+            "people_count": 1
+        },
+        {
+            "fps": 29.762790559242838,
+            "inference_time_ms": 10.413,
+            "people_count": 1
+        },
+        {
+            "fps": 31.178873195522712,
+            "inference_time_ms": 10.439,
+            "people_count": 1
+        },
+        {
+            "fps": 31.121623303871534,
+            "inference_time_ms": 10.481,
+            "people_count": 1
+        },
+        {
+            "fps": 27.638052070090097,
+            "inference_time_ms": 10.519,
+            "people_count": 1
+        },
+        {
+            "fps": 31.46633102580239,
+            "inference_time_ms": 10.529,
+            "people_count": 1
+        },
+        {
+            "fps": 31.272477092910528,
+            "inference_time_ms": 10.415,
+            "people_count": 1
+        },
+        {
+            "fps": 28.61312197773899,
+            "inference_time_ms": 9.275,
+            "people_count": 1
+        },
+        {
+            "fps": 31.270521279589733,
+            "inference_time_ms": 9.411,
+            "people_count": 1
+        },
+        {
+            "fps": 31.219755861509164,
+            "inference_time_ms": 9.465,
+            "people_count": 1
+        },
+        {
+            "fps": 28.93434796446862,
+            "inference_time_ms": 7.975,
+            "people_count": 1
+        },
+        {
+            "fps": 31.292048690427762,
+            "inference_time_ms": 7.803,
+            "people_count": 1
+        },
+        {
+            "fps": 31.11097284012071,
+            "inference_time_ms": 7.998,
+            "people_count": 1
+        },
+        {
+            "fps": 27.768521603909807,
+            "inference_time_ms": 7.834,
+            "people_count": 1
+        },
+        {
+            "fps": 31.56964263164541,
+            "inference_time_ms": 7.83,
+            "people_count": 1
+        },
+        {
+            "fps": 30.898529230008656,
+            "inference_time_ms": 8.201,
+            "people_count": 1
+        },
+        {
+            "fps": 27.990819011364273,
+            "inference_time_ms": 7.906,
+            "people_count": 1
+        },
+        {
+            "fps": 31.31066441229883,
+            "inference_time_ms": 7.889,
+            "people_count": 1
+        },
+        {
+            "fps": 31.13712791132146,
+            "inference_time_ms": 7.968,
+            "people_count": 1
+        },
+        {
+            "fps": 31.10710175132983,
+            "inference_time_ms": 8.122,
+            "people_count": 1
+        },
+        {
+            "fps": 27.85049852392358,
+            "inference_time_ms": 8.033,
+            "people_count": 1
+        },
+        {
+            "fps": 30.92050338579512,
+            "inference_time_ms": 7.99,
+            "people_count": 1
+        },
+        {
+            "fps": 31.55868337172973,
+            "inference_time_ms": 8.054,
+            "people_count": 1
+        },
+        {
+            "fps": 27.517129413059628,
+            "inference_time_ms": 8.411,
+            "people_count": 1
+        },
+        {
+            "fps": 29.375477351506962,
+            "inference_time_ms": 10.469,
+            "people_count": 1
+        },
+        {
+            "fps": 31.186652112895683,
+            "inference_time_ms": 10.546,
+            "people_count": 1
+        },
+        {
+            "fps": 27.842744180866468,
+            "inference_time_ms": 10.392,
+            "people_count": 1
+        },
+        {
+            "fps": 31.34206732276061,
+            "inference_time_ms": 10.384,
+            "people_count": 1
+        },
+        {
+            "fps": 31.042403923759856,
+            "inference_time_ms": 10.629,
+            "people_count": 1
+        },
+        {
+            "fps": 27.773148919624507,
+            "inference_time_ms": 10.436,
+            "people_count": 1
+        },
+        {
+            "fps": 31.270521279589733,
+            "inference_time_ms": 10.456,
+            "people_count": 1
+        },
+        {
+            "fps": 31.26270047206678,
+            "inference_time_ms": 10.601,
+            "people_count": 1
+        },
+        {
+            "fps": 29.199637924489735,
+            "inference_time_ms": 8.848,
+            "people_count": 1
+        },
+        {
+            "fps": 31.429738818870415,
+            "inference_time_ms": 8.502,
+            "people_count": 1
+        },
+        {
+            "fps": 31.834967528333124,
+            "inference_time_ms": 8.116,
+            "people_count": 1
+        },
+        {
+            "fps": 30.743689857656715,
+            "inference_time_ms": 8.498,
+            "people_count": 1
+        },
+        {
+            "fps": 28.174569633448847,
+            "inference_time_ms": 8.016,
+            "people_count": 1
+        },
+        {
+            "fps": 31.295965949989046,
+            "inference_time_ms": 8.062,
+            "people_count": 1
+        },
+        {
+            "fps": 30.62693332516615,
+            "inference_time_ms": 8.593,
+            "people_count": 1
+        },
+        {
+            "fps": 28.162667567872028,
+            "inference_time_ms": 8.051,
+            "people_count": 1
+        },
+        {
+            "fps": 31.331265469812323,
+            "inference_time_ms": 8.171,
+            "people_count": 1
+        },
+        {
+            "fps": 31.23243175713661,
+            "inference_time_ms": 8.081,
+            "people_count": 1
+        },
+        {
+            "fps": 27.765437583296315,
+            "inference_time_ms": 8.061,
+            "people_count": 1
+        },
+        {
+            "fps": 31.108069433210975,
+            "inference_time_ms": 8.025,
+            "people_count": 1
+        },
+        {
+            "fps": 30.96358682189745,
+            "inference_time_ms": 8.628,
+            "people_count": 1
+        },
+        {
+            "fps": 27.241275981366964,
+            "inference_time_ms": 9.368,
+            "people_count": 1
+        },
+        {
+            "fps": 31.31949011870087,
+            "inference_time_ms": 9.029,
+            "people_count": 1
+        }
+    ],
+    "summary": {
+        "average_fps": 30.170131011206472,
+        "average_inference_time_ms": 9.309265822784814,
+        "max_people_detected": 1,
+        "total_frames": 79
+    }
+}

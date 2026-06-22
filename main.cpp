@@ -42,12 +42,24 @@ int main() {
     yolo_init(yolo);
 
     VideoCapture cap(0, CAP_V4L2);
+    if (!cap.isOpened()) {
+        cerr << "[CAM] Câmera 0 não encontrada. Tentando câmera 1..." << endl;
+        cap.open(1, CAP_V4L2);
+    }
+
+    if (!cap.isOpened()) {
+        cerr << "[CAM] Erro FATAL: Nenhuma câmera encontrada." << endl;
+        return -1;
+    }
+
     cap.set(CAP_PROP_FRAME_WIDTH,  320);
     cap.set(CAP_PROP_FRAME_HEIGHT, 240);
 
-    if (!cap.isOpened()) {
-        cerr << "[CAM] Câmera não encontrada." << endl;
-        return -1;
+    // Espera a câmera estabilizar (warm-up)
+    cout << "[CAM] Aquecendo a câmera..." << endl;
+    for(int i = 0; i < 10; i++) {
+        Mat temp;
+        cap >> temp;
     }
 
     // ── Loop principal ────────────────────────────────────────────────────
@@ -60,7 +72,11 @@ int main() {
 
         Mat frame;
         cap >> frame;
-        if (frame.empty()) break;
+        if (frame.empty()) {
+            cerr << "[CAM] Frame vazio! Tentando continuar..." << endl;
+            continue;
+        }
+
 
         vector<TargetBox> caixas;
         auto inf_inicio = chrono::steady_clock::now();
