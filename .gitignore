@@ -23,4 +23,7 @@ teste
 #anotações
 *.txt
 
+*.json
+*.csv
+
 

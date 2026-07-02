@@ -6,12 +6,48 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <fstream>
+
 
 using json = nlohmann::json;
 
 static const std::string CTX_ETSI = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld";
 static const std::string URI_NAME = "https://uri.etsi.org/ngsi-ld/name";
 static const std::string URI_PPC  = "https://uri.fiware.org/ns/data-models#peopleCount";
+
+
+static void save_metrics(double connect_ms, double ttfb_ms, double total_ms,
+                            int people_count, long http_code) {
+    const std::string arquivo = "metrics_envio.csv";
+    
+    // Verifica se o arquivo já existe para escrever o cabeçalho só uma vez
+    std::ifstream check(arquivo);
+    bool novo = !check.good();
+    check.close();
+
+    std::ofstream f(arquivo, std::ios::app);  // append — não sobrescreve
+    if (!f.is_open()) return;
+
+    if (novo)
+        f << "timestamp,pessoas,http_code,connect_ms,ttfb_ms,total_ms\n";
+
+    // Timestamp atual
+    auto now = std::chrono::system_clock::now();
+    auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(
+                   now.time_since_epoch()) % 1000;
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ts;
+    ts << std::put_time(std::gmtime(&t), "%Y-%m-%dT%H:%M:%S");
+    ts << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
+
+    f << std::fixed << std::setprecision(3);
+    f << ts.str()    << ","
+      << people_count << ","
+      << http_code    << ","
+      << connect_ms   << ","
+      << ttfb_ms      << ","
+      << total_ms     << "\n";
+}
 
 // ── Callback interno do libcurl ──────────────────────────────────────────────
 static size_t curl_discard(char*, size_t size, size_t nmemb, void*) {
@@ -91,6 +127,8 @@ bool FiwareClient::init_entity() {
 
     long code = http_request("POST", url, payload.dump());
 
+
+
     if (code == 201) {
         std::cout << "[FIWARE] Entidade criada (201)." << std::endl;
         return true;
@@ -110,14 +148,64 @@ void FiwareClient::update(int people_count) {
     attrs[URI_PPC]     = {{"type", "Property"}, {"value", people_count}};
 
     std::string url = cfg_.broker_url + "/ngsi-ld/v1/entities/" + cfg_.entity_id + "/attrs";
-    
-    std::cout << "[FIWARE] Enviando PATCH para: " << url << std::endl;
-    std::cout << "[FIWARE] Dados (JSON): " << attrs.dump() << std::endl;
 
-    long code = http_request("PATCH", url, attrs.dump());
+    //────────────────────────/time-response/───────────────────────────────────
+    CURL* curl = curl_easy_init();
+    if (!curl) return;
 
-    if (code == 204)
-        std::cout << "[FIWARE] PATCH OK. Pessoas: " << people_count << std::endl;
-    else
-        std::cerr << "[FIWARE] PATCH falhou. HTTP " << code << " | URL: " << url << std::endl;
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/ld+json");
+    headers = curl_slist_append(headers, "Accept: application/json");
+
+    std::string body = attrs.dump();
+        curl_easy_setopt(curl, CURLOPT_URL,            url.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER,     headers);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST,  "PATCH");
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS,     body.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,  (long)body.size());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,  curl_discard);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT,        10L);
+
+    CURLcode res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK) {
+        std::cerr << "[FIWARE] curl erro: " << curl_easy_strerror(res) << std::endl;
+    } else {
+        long   http_code   = 0;
+        double connect_ms  = 0;
+        double ttfb_ms     = 0;
+        double total_ms    = 0;
+
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE,      &http_code);
+        curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME,       &connect_ms);
+        curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &ttfb_ms);
+        curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME,         &total_ms);
+
+
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE,      &http_code);
+        curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME,       &connect_ms);
+        curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &ttfb_ms);
+        curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME,         &total_ms);
+
+        // Salva no CSV
+        save_metrics(connect_ms * 1000, ttfb_ms * 1000, total_ms * 1000, people_count, http_code);
+
+
+        std::cout << "\n===== Metricas de Envio =====" << std::endl;
+        std::cout << std::fixed << std::setprecision(2);
+        std::cout << "  HTTP Status : " << http_code         << std::endl;
+        std::cout << "  Conexao TCP : " << connect_ms * 1000 << " ms" << std::endl;
+        std::cout << "  TTFB        : " << ttfb_ms    * 1000 << " ms  <- latencia principal" << std::endl;
+        std::cout << "  Total RTT   : " << total_ms   * 1000 << " ms" << std::endl;
+        std::cout << "=============================" << std::endl;
+
+        if (http_code == 204)
+            std::cout << "[FIWARE] PATCH OK. Pessoas: " << people_count << std::endl;
+        else
+            std::cerr << "[FIWARE] PATCH falhou. HTTP " << http_code << std::endl;
+    }
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
 }
+

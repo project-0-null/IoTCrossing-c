@@ -9,4 +9,4 @@ struct DetectionMetrics {
 };
 
 // Salva o JSON de métricas em disco
-void save_metrics(const std::vector<DetectionMetrics>& history, const std::string& filename = "metrics.json");
+void save_metrics(const std::vector<DetectionMetrics>& history, const std::string& filename = "metrics_output.json");
