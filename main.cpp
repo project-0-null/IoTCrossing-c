@@ -53,8 +53,8 @@ int main() {
         return -1;
     }
 
-    cap.set(CAP_PROP_FRAME_WIDTH,  320);//alterar via necessidade, atualmente usando (640x480)
-    cap.set(CAP_PROP_FRAME_HEIGHT, 240);
+    cap.set(CAP_PROP_FRAME_WIDTH,  640);//alterar via necessidade, atualmente usando (640x480)
+    cap.set(CAP_PROP_FRAME_HEIGHT, 480);
 
     // Espera a câmera estabilizar (warm-up)
     cout << "[CAM] Aquecendo a câmera..." << endl;
