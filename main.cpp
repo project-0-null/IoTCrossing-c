@@ -6,7 +6,7 @@
 #include "yolo-fastestv2.h"
 #include "metrics/metrics.h"
 #include "fiware/fiware_client.h"
-#include "metrics/response_time.h"
+
 
 using namespace std;
 using namespace cv;
