@@ -26,4 +26,22 @@ teste
 *.json
 *.csv
 
+# Fotos e Imagens
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.webp
+*.gif
+*.tiff
 
+# Vídeos e Mídias
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.h264
+*.h265
+*.wmv
+*.flv
+*.m4v

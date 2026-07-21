@@ -78,6 +78,8 @@ int main() {
             continue;
         }
 
+        cv::flip(frame,frame,0); // Flip vertical
+
 
         vector<TargetBox> caixas;
         auto inf_inicio = chrono::steady_clock::now();
