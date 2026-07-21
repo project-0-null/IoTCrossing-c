@@ -1,0 +1,8 @@
+{
+    "broker_url": "http://127.0.0.1:1026",
+    "entity_id": "urn:ngsi-ld:ItemFlowObserved:1",
+    "entity_name": "RaspberryPi_3",
+    "latitude": -20.272594,
+    "longitude": -40.306346,
+    "interval_s": 10
+}

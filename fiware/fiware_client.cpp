@@ -54,6 +54,31 @@ static size_t curl_discard(char*, size_t size, size_t nmemb, void*) {
     return size * nmemb;
 }
 
+// ── Carregar Configuração ───────────────────────────────────────────────────
+FiwareConfig FiwareConfig::load_from_file(const std::string& filepath) {
+    FiwareConfig cfg;
+    std::ifstream f(filepath);
+    if (!f.is_open()) {
+        std::cerr << "[Config] Arquivo '" << filepath << "' nao encontrado. Usando configuracao padrao." << std::endl;
+        return cfg;
+    }
+
+    try {
+        json j = json::parse(f);
+        if (j.contains("broker_url"))  cfg.broker_url  = j["broker_url"].get<std::string>();
+        if (j.contains("entity_id"))   cfg.entity_id   = j["entity_id"].get<std::string>();
+        if (j.contains("entity_name")) cfg.entity_name = j["entity_name"].get<std::string>();
+        if (j.contains("latitude"))    cfg.latitude    = j["latitude"].get<double>();
+        if (j.contains("longitude"))   cfg.longitude   = j["longitude"].get<double>();
+        if (j.contains("interval_s"))  cfg.interval_s  = j["interval_s"].get<int>();
+        std::cout << "[Config] Configuracoes carregadas de '" << filepath << "'." << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[Config] Erro ao ler '" << filepath << "': " << e.what() << std::endl;
+    }
+
+    return cfg;
+}
+
 // ── Construtor / Destrutor ───────────────────────────────────────────────────
 FiwareClient::FiwareClient(const FiwareConfig& cfg) : cfg_(cfg) {
     curl_global_init(CURL_GLOBAL_DEFAULT);

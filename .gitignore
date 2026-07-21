@@ -23,8 +23,11 @@ teste
 #anotações
 *.txt
 
+# Arquivos de dados e configurações
 *.json
 *.csv
+!config.json.example
+config.json
 
 # Fotos e Imagens
 *.jpg

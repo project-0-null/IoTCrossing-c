@@ -25,14 +25,8 @@ void yolo_init(yoloFastestv2& yolo) {
 int main() {
     signal(SIGINT, signalHandler);
 
-    // ── Configuração do broker ────────────────────────────────────────────
-    FiwareConfig cfg;
-    cfg.broker_url  = "http://127.0.0.1:31330";// Porta correta NodePort
-    cfg.entity_id   = "urn:ngsi-ld:ItemFlowObserved:1";
-    cfg.entity_name = "RaspberryPi_3";
-    cfg.latitude    = -20.272594;
-    cfg.longitude   = -40.306346;
-    cfg.interval_s  = 10; // 10 segundos para teste
+    // ── Configuração do broker (carregado via config.json) ───────────────
+    FiwareConfig cfg = FiwareConfig::load_from_file("config.json");
 
 
     FiwareClient fiware(cfg);
