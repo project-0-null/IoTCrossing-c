@@ -14,7 +14,7 @@ struct FiwareConfig {
 
 class FiwareClient {
 public:
-    explicit FiwareClient(const FiwareConfig& cfg);
+    explicit FiwareClient(const FiwareConfig& cfg, const std::string& session_ts = "");
     ~FiwareClient();
 
     // Chama no início: tenta POST, aceita 409 (já existe)
@@ -25,6 +25,7 @@ public:
 
 private:
     FiwareConfig cfg_;
+    std::string  csv_filename_;
     long http_request(const std::string& method,
                       const std::string& url,
                       const std::string& body);

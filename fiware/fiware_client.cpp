@@ -17,8 +17,8 @@ static const std::string URI_PPC  = "https://uri.fiware.org/ns/data-models#peopl
 
 
 static void save_metrics(double connect_ms, double ttfb_ms, double total_ms,
-                            int people_count, long http_code) {
-    const std::string arquivo = "metrics_envio.csv";
+                            int people_count, long http_code, const std::string& arquivo) {
+    if (arquivo.empty()) return;
     
     // Verifica se o arquivo já existe para escrever o cabeçalho só uma vez
     std::ifstream check(arquivo);
@@ -64,7 +64,7 @@ FiwareConfig FiwareConfig::load_from_file(const std::string& filepath) {
     }
 
     try {
-        json j = json::parse(f);
+        json j = json::parse(f, nullptr, true, true);
         if (j.contains("broker_url"))  cfg.broker_url  = j["broker_url"].get<std::string>();
         if (j.contains("entity_id"))   cfg.entity_id   = j["entity_id"].get<std::string>();
         if (j.contains("entity_name")) cfg.entity_name = j["entity_name"].get<std::string>();
@@ -80,7 +80,16 @@ FiwareConfig FiwareConfig::load_from_file(const std::string& filepath) {
 }
 
 // ── Construtor / Destrutor ───────────────────────────────────────────────────
-FiwareClient::FiwareClient(const FiwareConfig& cfg) : cfg_(cfg) {
+FiwareClient::FiwareClient(const FiwareConfig& cfg, const std::string& session_ts) : cfg_(cfg) {
+    std::string ts = session_ts;
+    if (ts.empty()) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
+        ts = ss.str();
+    }
+    csv_filename_ = "metrics_envio_" + ts + ".csv";
     curl_global_init(CURL_GLOBAL_DEFAULT);
 }
 
@@ -213,7 +222,7 @@ void FiwareClient::update(int people_count) {
         curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME,         &total_ms);
 
         // Salva no CSV
-        save_metrics(connect_ms * 1000, ttfb_ms * 1000, total_ms * 1000, people_count, http_code);
+        save_metrics(connect_ms * 1000, ttfb_ms * 1000, total_ms * 1000, people_count, http_code, csv_filename_);
 
 
         std::cout << "\n===== Metricas de Envio =====" << std::endl;

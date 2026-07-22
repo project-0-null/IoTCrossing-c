@@ -22,14 +22,22 @@ void yolo_init(yoloFastestv2& yolo) {
     cout << "[YOLO] Modelo carregado." << endl;
 }
 
+static std::string get_session_timestamp() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
+    return ss.str();
+}
+
 int main() {
     signal(SIGINT, signalHandler);
 
     // ── Configuração do broker (carregado via config.json) ───────────────
     FiwareConfig cfg = FiwareConfig::load_from_file("config.json");
 
-
-    FiwareClient fiware(cfg);
+    std::string session_ts = get_session_timestamp();
+    FiwareClient fiware(cfg, session_ts);
     fiware.init_entity(); // POST inicial
 
     // ── YOLO + câmera ─────────────────────────────────────────────────────
@@ -110,6 +118,6 @@ int main() {
     // print_metrics(metrics);
 
     cap.release();
-    save_metrics(history);
+    save_metrics(history, "metrics_output_" + session_ts + ".json");
     return 0;
 }

@@ -4,10 +4,24 @@
 #include <iostream>
 #include <numeric>
 
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
 using json = nlohmann::json;
 
 void save_metrics(const std::vector<DetectionMetrics>& history, const std::string& filename) {
     if (history.empty()) return;
+
+    std::string target_file = filename;
+    if (target_file.empty()) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << "metrics_output_" << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S") << ".json";
+        target_file = ss.str();
+    }
 
     double sum_inf = 0, sum_fps = 0;
     int    max_people = 0;
@@ -34,10 +48,10 @@ void save_metrics(const std::vector<DetectionMetrics>& history, const std::strin
         {"max_people_detected",       max_people}
     };
 
-    std::ofstream f(filename);
+    std::ofstream f(target_file);
     if (f.is_open()) {
         f << j_out.dump(4);
-        std::cout << "\n[Metrics] Salvo em '" << filename << "' ("
+        std::cout << "\n[Metrics] Salvo em '" << target_file << "' ("
                   << n << " frames)." << std::endl;
         std::cout << "[Metrics] FPS médio: " << sum_fps / n
                   << " | Inferência média: " << sum_inf / n << "ms" << std::endl;
