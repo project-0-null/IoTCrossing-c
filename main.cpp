@@ -3,6 +3,8 @@
 #include <chrono>
 #include <vector>
 #include <csignal>
+#include <iomanip>
+#include <ctime>
 #include "yolo-fastestv2.h"
 #include "metrics/metrics.h"
 #include "fiware/fiware_client.h"
@@ -27,6 +29,14 @@ static std::string get_session_timestamp() {
     std::time_t t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
+    return ss.str();
+}
+
+static std::string get_current_time_str() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&t), "%H:%M:%S");
     return ss.str();
 }
 
@@ -65,6 +75,19 @@ int main() {
         cap >> temp;
     }
 
+    // ── Configuração do Gravador de Vídeo ─────────────────────────────────
+    std::string video_filename = "video_output_" + session_ts + ".avi";
+    int fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
+    double video_fps = 15.0; // FPS estimado de gravação
+    cv::Size frame_size(640, 480);
+
+    cv::VideoWriter video_writer(video_filename, fourcc, video_fps, frame_size);
+    if (!video_writer.isOpened()) {
+        cerr << "[REC] Erro: Não foi possível criar o arquivo de vídeo (" << video_filename << ")" << endl;
+    } else {
+        cout << "[REC] Gravando vídeo em: " << video_filename << endl;
+    }
+
     // ── Loop principal ────────────────────────────────────────────────────
     vector<DetectionMetrics> history;
     int  contador  = 0;
@@ -80,8 +103,7 @@ int main() {
             continue;
         }
 
-        cv::flip(frame,frame,0); // Flip vertical
-
+        cv::flip(frame, frame, 0); // Flip vertical
 
         vector<TargetBox> caixas;
         auto inf_inicio = chrono::steady_clock::now();
@@ -91,8 +113,18 @@ int main() {
         double inf_ms = chrono::duration_cast<chrono::microseconds>(inf_fim - inf_inicio).count() / 1000.0;
 
         int pessoas = 0;
-        for (const auto& c : caixas)
-            if (c.cate == 0 && c.score > 0.4f) pessoas++;
+        for (const auto& c : caixas) {
+            if (c.cate == 0 && c.score > 0.4f) {
+                pessoas++;
+                // Desenhar retângulo ao redor da pessoa detectada
+                cv::rectangle(frame, cv::Point(c.x1, c.y1), cv::Point(c.x2, c.y2), cv::Scalar(0, 255, 0), 2);
+                
+                // Rótulo com a confiança
+                std::string label = "Pessoa " + std::to_string((int)(c.score * 100)) + "%";
+                cv::putText(frame, label, cv::Point(c.x1, std::max(15, c.y1 - 5)),
+                            cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+            }
+        }
 
         double frame_ms = chrono::duration_cast<chrono::microseconds>(
             chrono::steady_clock::now() - frame_inicio).count() / 1000.0;
@@ -104,6 +136,16 @@ int main() {
             cout << "[Frame " << contador << "] " << inf_ms << "ms | "
                  << 1000.0 / frame_ms << " fps | Pessoas: " << pessoas << endl;
 
+        // Overlay no vídeo (Horário + Qtd Pessoas)
+        std::string osd_info = get_current_time_str() + " | Pessoas: " + std::to_string(pessoas);
+        cv::putText(frame, osd_info, cv::Point(10, 30),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
+
+        // Gravação do frame no vídeo
+        if (video_writer.isOpened()) {
+            video_writer.write(frame);
+        }
+
         // ── Envio periódico ───────────────────────────────────────────────
         auto agora    = chrono::steady_clock::now();
         auto segundos = chrono::duration_cast<chrono::seconds>(agora - ultimo_envio).count();
@@ -113,11 +155,13 @@ int main() {
         }
     }
 
-    // std::string url = cfg.broker_url;
-    // ResponseMetrics metrics = send_and_measure(url, fiware_client.payload.dump() );
-    // print_metrics(metrics);
-
     cap.release();
+    if (video_writer.isOpened()) {
+        video_writer.release();
+        cout << "[REC] Vídeo salvo com sucesso: " << video_filename << endl;
+    }
+
     save_metrics(history, "metrics_output_" + session_ts + ".json");
     return 0;
 }
+
