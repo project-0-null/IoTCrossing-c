@@ -75,17 +75,23 @@ int main() {
         cap >> temp;
     }
 
-    // ── Configuração do Gravador de Vídeo ─────────────────────────────────
-    std::string video_filename = "video_output_" + session_ts + ".avi";
-    int fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
-    double video_fps = 15.0; // FPS estimado de gravação
+    // ── Configuração do Gravador de Vídeo (.mp4) ──────────────────────────
+    std::string video_filename = "video_output_" + session_ts + ".mp4";
+    int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
+    double video_fps = 10.0; // FPS otimizado para vídeos longos
     cv::Size frame_size(640, 480);
 
     cv::VideoWriter video_writer(video_filename, fourcc, video_fps, frame_size);
     if (!video_writer.isOpened()) {
-        cerr << "[REC] Erro: Não foi possível criar o arquivo de vídeo (" << video_filename << ")" << endl;
+        cerr << "[REC] Erro: Não foi possível criar o arquivo de vídeo MP4 (" << video_filename << "). Tentando H264..." << endl;
+        fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
+        video_writer.open(video_filename, fourcc, video_fps, frame_size);
+    }
+
+    if (!video_writer.isOpened()) {
+        cerr << "[REC] Erro: Falha ao abrir o gravador MP4." << endl;
     } else {
-        cout << "[REC] Gravando vídeo em: " << video_filename << endl;
+        cout << "[REC] Gravando vídeo otimizado (MP4) em: " << video_filename << endl;
     }
 
     // ── Loop principal ────────────────────────────────────────────────────
