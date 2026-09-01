@@ -5,18 +5,29 @@
 #include <csignal>
 #include <iomanip>
 #include <ctime>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include "yolo-fastestv2.h"
 #include "metrics/metrics.h"
-#include "fiware/fiware_client.h"
-
+#include "fiware/mqtt_client.h"
 
 using namespace std;
 using namespace cv;
 
-bool run_loop = true;
+// ── Controle de ciclo de vida e sincronização entre threads ─────────────────
+std::atomic<bool> run_loop{true};
+std::atomic<bool> worker_active{true};
+std::atomic<int>  shared_people_count{0};
+std::mutex        cv_mutex;
+std::condition_variable cv_sleep;
+
 void signalHandler(int) {
-    cout << "\nFinalizando e salvando dados..." << endl;
+    cout << "\n[SISTEMA] Sinal de interrupção recebido. Finalizando e salvando dados..." << endl;
     run_loop = false;
+    worker_active = false;
+    cv_sleep.notify_all(); // Acorda a worker thread imediatamente para encerramento limpo
 }
 
 void yolo_init(yoloFastestv2& yolo) {
@@ -40,6 +51,40 @@ static std::string get_current_time_str() {
     return ss.str();
 }
 
+// ── Worker Thread Dedicada para Publicação MQTT UltraLight ──────────────────
+// Esta função roda 100% isolada em uma thread separada.
+// Ela não bloqueia nem compete com a captura de vídeo e inferência YOLO.
+void fiware_worker_thread(FiwareMqttClient* fiware, int interval_seconds) {
+    cout << "[FIWARE MQTT Worker] Thread dedicada iniciada (Intervalo de envio: "
+         << interval_seconds << "s)." << endl;
+
+    while (worker_active.load(std::memory_order_relaxed)) {
+        // Aguarda pelo intervalo configurado ou acorda imediatamente se o programa for encerrado
+        std::unique_lock<std::mutex> lock(cv_mutex);
+        bool encerrando = cv_sleep.wait_for(lock, std::chrono::seconds(interval_seconds), []() {
+            return !worker_active.load(std::memory_order_relaxed);
+        });
+
+        if (encerrando) {
+            // Se foi acordado para finalizar o programa, encerra o loop da thread
+            break;
+        }
+
+        // Lê a contagem de pessoas mais recente de forma atômica (thread-safe, sem locks pesados)
+        int pessoas_atual = shared_people_count.load(std::memory_order_relaxed);
+
+        try {
+            fiware->update(pessoas_atual);
+        } catch (const std::exception& e) {
+            cerr << "[FIWARE MQTT Worker] Erro no envio periódico: " << e.what() << " (ignorado)" << endl;
+        } catch (...) {
+            cerr << "[FIWARE MQTT Worker] Erro desconhecido no envio periódico (ignorado)" << endl;
+        }
+    }
+
+    cout << "[FIWARE MQTT Worker] Thread de envio finalizada com sucesso." << endl;
+}
+
 int main() {
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
@@ -51,17 +96,22 @@ int main() {
     VideoWriter video_writer;
 
     try {
-        // ── Configuração do broker (carregado via config.json) ───────────────
-        FiwareConfig cfg = FiwareConfig::load_from_file("config.json");
+        // ── Configuração MQTT / FIWARE IoT Agent (carregada de config.json) ──
+        FiwareMqttConfig cfg = FiwareMqttConfig::load_from_file("config.json");
 
-        FiwareClient fiware(cfg, session_ts);
+        FiwareMqttClient fiware(cfg, session_ts);
         try {
-            fiware.init_entity(); // POST inicial
+            // Auto-provisiona o sensor no IoT Agent e conecta no Broker MQTT
+            fiware.init();
         } catch (const std::exception& e) {
             cerr << "[FIWARE] Falha ao tentar conectar no início: " << e.what() << " (ignorado)" << endl;
         } catch (...) {
             cerr << "[FIWARE] Falha desconhecida ao tentar conectar no início (ignorado)" << endl;
         }
+
+        // ── Início da Worker Thread Dedicada para envio MQTT ─────────────────
+        // A thread gerencia as publicações assíncronas em segundo plano
+        std::thread fiware_thread(fiware_worker_thread, &fiware, cfg.interval_s);
 
         // ── YOLO + câmera ─────────────────────────────────────────────────────
         yoloFastestv2 yolo;
@@ -75,11 +125,15 @@ int main() {
 
         if (!cap.isOpened()) {
             cerr << "[CAM] Erro FATAL: Nenhuma câmera encontrada." << endl;
+            // Encerra a thread antes de sair
+            worker_active = false;
+            cv_sleep.notify_all();
+            if (fiware_thread.joinable()) fiware_thread.join();
             save_metrics(history, "metrics_output_" + session_ts + ".json");
             return -1;
         }
 
-        cap.set(CAP_PROP_FRAME_WIDTH,  640); // alterar via necessidade, atualmente usando (640x480)
+        cap.set(CAP_PROP_FRAME_WIDTH,  640);
         cap.set(CAP_PROP_FRAME_HEIGHT, 480);
 
         // Espera a câmera estabilizar (warm-up)
@@ -91,7 +145,7 @@ int main() {
 
         // ── Configuração do Gravador de Vídeo (.mp4) ──────────────────────────
         int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-        double video_fps = 10.0; // FPS otimizado para vídeos longos
+        double video_fps = 10.0;
         cv::Size frame_size(640, 480);
 
         video_writer.open(video_filename, fourcc, video_fps, frame_size);
@@ -107,11 +161,10 @@ int main() {
             cout << "[REC] Gravando vídeo otimizado (MP4) em: " << video_filename << endl;
         }
 
-        // ── Loop principal ────────────────────────────────────────────────────
-        int  contador  = 0;
-        auto ultimo_envio = chrono::steady_clock::now();
+        // ── Loop principal de processamento de vídeo ─────────────────────────
+        int contador = 0;
 
-        while (run_loop) {
+        while (run_loop.load(std::memory_order_relaxed)) {
             auto frame_inicio = chrono::steady_clock::now();
 
             Mat frame;
@@ -134,15 +187,16 @@ int main() {
             for (const auto& c : caixas) {
                 if (c.cate == 0 && c.score > 0.4f) {
                     pessoas++;
-                    // Desenhar retângulo ao redor da pessoa detectada
                     cv::rectangle(frame, cv::Point(c.x1, c.y1), cv::Point(c.x2, c.y2), cv::Scalar(0, 255, 0), 2);
                     
-                    // Rótulo com a confiança
                     std::string label = "Pessoa " + std::to_string((int)(c.score * 100)) + "%";
                     cv::putText(frame, label, cv::Point(c.x1, std::max(15, c.y1 - 5)),
                                 cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
                 }
             }
+
+            // ── Atualização Atômica da Contagem Compartilhada (Custo: < 1 ns) ─────
+            shared_people_count.store(pessoas, std::memory_order_relaxed);
 
             double frame_ms = chrono::duration_cast<chrono::microseconds>(
                 chrono::steady_clock::now() - frame_inicio).count() / 1000.0;
@@ -163,21 +217,16 @@ int main() {
             if (video_writer.isOpened()) {
                 video_writer.write(frame);
             }
-
-            // ── Envio periódico ───────────────────────────────────────────────
-            auto agora    = chrono::steady_clock::now();
-            auto segundos = chrono::duration_cast<chrono::seconds>(agora - ultimo_envio).count();
-            if (segundos >= cfg.interval_s) {
-                try {
-                    fiware.update(pessoas);
-                } catch (const std::exception& e) {
-                    cerr << "[FIWARE] Erro no envio periódico: " << e.what() << " (ignorado)" << endl;
-                } catch (...) {
-                    cerr << "[FIWARE] Erro desconhecido no envio periódico (ignorado)" << endl;
-                }
-                ultimo_envio = agora;
-            }
         }
+
+        // ── Encerramento Limpo da Worker Thread ──────────────────────────────
+        cout << "[SISTEMA] Aguardando finalização da Worker Thread de rede..." << endl;
+        worker_active = false;
+        cv_sleep.notify_all();
+        if (fiware_thread.joinable()) {
+            fiware_thread.join();
+        }
+
     } catch (const std::exception& e) {
         cerr << "\n[ERRO CRÍTICO] Exceção capturada no main: " << e.what() << endl;
     } catch (...) {
@@ -195,4 +244,3 @@ int main() {
     save_metrics(history, "metrics_output_" + session_ts + ".json");
     return 0;
 }
-

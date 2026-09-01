@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale
+  namespace: default
+  labels:
+    app: tailscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale
+  template:
+    metadata:
+      labels:
+        app: tailscale
+    spec:
+      serviceAccountName: tailscale
+      containers:
+      # ── Container Principal do Tailscale ──────────────────────────────────
+      - name: tailscale
+        image: ghcr.io/tailscale/tailscale:latest
+        env:
+        - name: TS_AUTHKEY
+          valueFrom:
+            secretKeyRef:
+              name: tailscale-auth
+              key: TS_AUTHKEY
+              optional: true
+        - name: TS_USERSPACE
+          value: "true"
+        - name: TS_ROUTES
+          value: "192.168.206.2/32"
+
+      # ── Proxy Mosquitto MQTT (Porta 1883) ─────────────────────────────────
+      - name: proxy-mosquitto
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:1883,fork,reuseaddr
+        - TCP:10.111.222.176:1883
+
+      # ── Proxy FIWARE IoT Agent UltraLight (Porta 4041) ────────────────────
+      - name: proxy-iota-ul
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:4041,fork,reuseaddr
+        - TCP:10.101.232.95:4041
+
+      # ── Proxy Orion Context Broker (Portas 31330 e 1026) ──────────────────
+      - name: proxy
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:31330,fork,reuseaddr
+        - TCP:10.99.253.29:1026
+
+      - name: proxy-orion
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:1026,fork,reuseaddr
+        - TCP:orion-service.nerds.svc.cluster.local:1026
+
+      # ── Proxy SSH (Porta 22) ──────────────────────────────────────────────
+      - name: proxy-ssh
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:22,fork,reuseaddr
+        - TCP:192.168.206.2:22
+
+      # ── Proxy Prometheus (Porta 9090) ─────────────────────────────────────
+      - name: proxy-prometheus
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:9090,fork,reuseaddr
+        - TCP:prometheus-service.nerds.svc.cluster.local:9090
+
+      # ── Proxy Grafana (Porta 3000) ────────────────────────────────────────
+      - name: proxy-grafana
+        image: alpine/socat:latest
+        command:
+        - socat
+        - TCP-LISTEN:3000,fork,reuseaddr
+        - TCP:grafana-service.nerds.svc.cluster.local:3000

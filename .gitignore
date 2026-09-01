@@ -1,50 +1,32 @@
-# Compilação e Build
+# Diretório de compilação
 build/
 bin/
-obj/
-*.o
-*.a
-*.so
 
-# Executáveis gerados
+# Binários e bibliotecas compiladas
 main
-teste
+*.o
+*.so
+*.a
+*.dylib
+mosquitto_pub
+mosquitto_sub
+mosquitto_rr
+mosquitto
 
-# Arquivos de Sistema e IDEs
-.vscode/
-.idea/
+# Arquivos de saída de testes e execuções
+video_output_*.mp4
+metrics_output_*.json
+metrics_envio_*.csv
+
+# Arquivos temporários e de IDEs
 .DS_Store
 *.swp
-*.patch
+*~
+.vscode/
+.idea/
 
-# Arquivos de log ou temporários
-*.log
-
-#anotações
-*.txt
-
-# Arquivos de dados e configurações
-*.json
-*.csv
-!config.json.example
+# Configurações com IPs privados locais (use config.json.example como modelo no Git)
 config.json
 
-# Fotos e Imagens
-*.jpg
-*.jpeg
-*.png
-*.bmp
-*.webp
-*.gif
-*.tiff
-
-# Vídeos e Mídias
-*.mp4
-*.avi
-*.mkv
-*.mov
-*.h264
-*.h265
-*.wmv
-*.flv
-*.m4v
+# Notas e rascunhos locais
+melhoris/

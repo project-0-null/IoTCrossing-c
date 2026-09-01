@@ -3,7 +3,7 @@
 
 echo "--- Instalando dependências básicas do sistema ---"
 sudo apt update
-sudo apt install -y build-essential cmake git libopencv-dev g++
+sudo apt install -y build-essential cmake git libopencv-dev libcurl4-openssl-dev libmosquitto-dev g++
 
 echo "--- DICA IMPORTANTE ---"
 echo "Este projeto precisa que a biblioteca NCNN esteja instalada."

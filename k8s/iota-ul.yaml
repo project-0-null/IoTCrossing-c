@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiware-iota-ul
+  namespace: fiware-kata
+  labels:
+    app: fiware-iota-ul
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fiware-iota-ul
+  template:
+    metadata:
+      labels:
+        app: fiware-iota-ul
+    spec:
+      containers:
+      - name: iotagent-ul
+        image: telefonicaiot/iotagent-ul:latest
+        ports:
+        - containerPort: 4041
+          name: north
+        - containerPort: 7896
+          name: south-http
+        env:
+        - name: IOTA_CB_HOST
+          value: "orion.fiware-kata.svc.cluster.local"
+        - name: IOTA_CB_PORT
+          value: "1026"
+        - name: IOTA_CB_NGSI_VERSION
+          value: "ld"
+        - name: IOTA_JSON_LD_CONTEXT
+          value: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+        - name: IOTA_NORTH_PORT
+          value: "4041"
+        - name: IOTA_REGISTRY_TYPE
+          value: "mongodb"
+        - name: IOTA_MONGO_HOST
+          value: "mongo-db.fiware-kata.svc.cluster.local"
+        - name: IOTA_MONGO_PORT
+          value: "27017"
+        - name: IOTA_MONGO_DB
+          value: "iotagentul"
+        - name: IOTA_MQTT_HOST
+          value: "mosquitto.fiware-kata.svc.cluster.local"
+        - name: IOTA_MQTT_PORT
+          value: "1883"
+        - name: IOTA_PROVIDER_URL
+          value: "http://fiware-iota-ul.fiware-kata.svc.cluster.local:4041"
+        - name: IOTA_AUTOPROVISION
+          value: "true"
+        - name: IOTA_DEFAULT_RESOURCE
+          value: "/iot/d"
+        - name: IOTA_LOG_LEVEL
+          value: "DEBUG"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fiware-iota-ul
+  namespace: fiware-kata
+  labels:
+    app: fiware-iota-ul
+spec:
+  type: NodePort
+  ports:
+  - port: 4041
+    targetPort: 4041
+    nodePort: 31041
+    name: northbound
+    protocol: TCP
+  - port: 7896
+    targetPort: 7896
+    nodePort: 31789
+    name: south-http
+    protocol: TCP
+  selector:
+    app: fiware-iota-ul
